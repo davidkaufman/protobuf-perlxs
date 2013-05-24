@@ -1,8 +1,14 @@
 message Person {
+  message Child {
+    required int32 id = 1;
+    optional Child child = 2;
+    optional Person person = 3;
+  }
   required int32 id = 1;
   required string name = 2;
   optional string email = 3;
   optional Person person = 4;
+  required Child  child = 5;
 }
 
 option optimize_for = SPEED;

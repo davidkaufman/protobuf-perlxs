@@ -175,6 +175,10 @@ PerlXSGenerator::GenerateMessageXS(const Descriptor* descriptor,
 
   printer.Print("\n\n");
 
+  GenerateMessageFromToHashref(descriptor, printer);
+
+  printer.Print("\n\n");
+
   GenerateMessageStatics(descriptor, printer);
 
   printer.Print("\n\n");
@@ -1392,7 +1396,7 @@ PerlXSGenerator::GenerateMessageXSCommonMethods(const Descriptor* descriptor,
 }
 
 void
-PerlXSGenerator::GenerateMessageToHashref(const Descriptor* descriptor,
+PerlXSGenerator::GenerateMessageFromToHashref(const Descriptor* descriptor,
                       io::Printer& printer) const
 {
   map<string, string> vars;
@@ -1408,19 +1412,17 @@ PerlXSGenerator::GenerateMessageToHashref(const Descriptor* descriptor,
   vars["underscores"] = un;
 
   for ( int i = 0; i < descriptor->nested_type_count(); i++ ) {
-    GenerateMessageToHashref(descriptor->nested_type(i), printer);
+    GenerateMessageFromToHashref(descriptor->nested_type(i), printer);
   }
 
-  printer.Print(vars,
-    "static SV * $underscores$_message_to_hashref( $classname$ * message );\n");
+  printer.Print(vars, "static SV * $underscores$_message_to_hashref( $classname$ * message );\n");
+  printer.Print(vars, "static $classname$ * $underscores$_from_hashref ( SV * sv0 );\n");
 }
 
 void
 PerlXSGenerator::GenerateMessageXSPackage(const Descriptor* descriptor,
 					  io::Printer& printer) const
 {
-  GenerateMessageToHashref(descriptor, printer);
-
   map<string, string> vars;
 
   string cn = cpp::ClassName(descriptor, true);

@@ -17,6 +17,7 @@ my $data;
 my $packed;
 
 my $person = Person->new;
+my $child = Person::Child->new({ id => 1, child => { id => 2 }, person => { id => 11, name => "test", child => { id => 22 } } });
 
 $start = [gettimeofday];
 
@@ -26,6 +27,7 @@ foreach ( 1 .. $REPEAT ) {
     $person->set_id($id);
     $person->set_name($name);
     $person->set_email($email);
+    $person->set_child($child);
     $packed = $person->pack();
     $person->clear();
     $person->unpack($packed);
@@ -40,7 +42,7 @@ print "1) [$id] $name <$email>: $REPEAT iterations in $elapsed seconds.\n";
 
 # Try again, but this time, populate the object with a hashref.
 
-$data = { id => $id, name => $name, email => $email };
+$data = { id => $id, name => $name, email => $email, child => { id => 11 } };
 
 $start = [gettimeofday];
 

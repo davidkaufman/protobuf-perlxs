@@ -1889,7 +1889,6 @@ PerlXSGenerator::MessageToHashref(const Descriptor * descriptor,
       vars["fieldtype"] = cpp::ClassName(field->message_type(), true);
       vars["underscores"] = StringReplace(cpp::ClassName(field->message_type(), true), "::", "__", true);
       if ( descriptor->full_name() == contains->full_name() ) { 
-          // fuck
           printer.Print(vars,
 		    "$fieldtype$ * msg$ndepth$ = msg$pdepth$->"
 		    "mutable_$cppname$($i$);\n"

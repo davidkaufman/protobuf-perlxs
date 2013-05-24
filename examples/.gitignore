@@ -1,1 +1,8 @@
 */Makefile.PL
+*/*.json
+*/*.yml
+*/*.pm
+*/*.pod
+*/*.xs
+*/*.pb.cc
+*/*.pb.h

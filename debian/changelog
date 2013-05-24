@@ -1,3 +1,9 @@
+protobuf-perlxs (1.2) unstable; urgency=low
+
+  * support for recursive message definitions
+
+ -- Serge Toropov <sombr@yandex-team.ru>  Fri, 24 May 2013 13:01:33 +0400
+
 protobuf-perlxs (1.1-4) unstable; urgency=low
 
   * redebianify

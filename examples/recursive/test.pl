@@ -23,6 +23,7 @@ $start = [gettimeofday];
 
 # Take the 'Person' protocol buffer through its life cycle.
 
+$person->add_children($child);
 foreach ( 1 .. $REPEAT ) {
     $person->set_id($id);
     $person->set_name($name);
@@ -88,3 +89,9 @@ foreach ( 1 .. $REPEAT ) {
 $elapsed = tv_interval($start);
 
 print "5) [$id] $name <$email>: $REPEAT iterations in $elapsed seconds.\n";
+
+$person = Person->new( { id => 1, name => "123", child => { id =>1 }, children => [ { id => 1000 } ] } );
+my @children = @{$person->to_hashref->{children}} if $person->to_hashref->{children};
+die "6) repeated doesn't work - no children" unless @children;
+die "6) repeated doesn't work - no child data" unless $children[0]->{id} == 1000;
+print "6) repeated recursive works.\n";

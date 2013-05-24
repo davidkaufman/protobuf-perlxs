@@ -2045,17 +2045,30 @@ PerlXSGenerator::MessageFromHashref(const Descriptor * descriptor,
       printer.Indent();
 
       if ( field->cpp_type() == FieldDescriptor::CPPTYPE_MESSAGE ) {
-	printer.Print(vars,
-		      "$fieldtype$ * msg$ndepth$ = "
-		      "msg$pdepth$->add_$cppname$();\n"
-		      "SV ** sv$depth$;\n"
-		      "SV *  sv$ndepth$;\n"
-		      "\n"
-		      "if ( (sv$depth$ = "
-		      "av_fetch(av$depth$, i$depth$, 0)) != NULL ) {\n"
-		      "  sv$ndepth$ = *sv$depth$;\n");
+        if ( descriptor->full_name() == contains->full_name() ) {
+            printer.Print(vars,
+                  "$fieldtype$ * msg$ndepth$ = "
+                  "msg$pdepth$->add_$cppname$();\n"
+                  "SV ** sv$depth$;\n"
+                  "\n"
+                  "if ( (sv$depth$ = "
+                  "av_fetch(av$depth$, i$depth$, 0)) != NULL ) {\n"
+                  "  $fieldtype$ * tmp_msg$ndepth$ = $underscores$_from_hashref( *sv$depth$ );\n"
+                  "  msg$ndepth$->CopyFrom( *tmp_msg$ndepth$ );"
+		      "\n");
+        } else {
+            printer.Print(vars,
+                  "$fieldtype$ * msg$ndepth$ = "
+                  "msg$pdepth$->add_$cppname$();\n"
+                  "SV ** sv$depth$;\n"
+                  "SV *  sv$ndepth$;\n"
+                  "\n"
+                  "if ( (sv$depth$ = "
+                  "av_fetch(av$depth$, i$depth$, 0)) != NULL ) {\n"
+                  "  sv$ndepth$ = *sv$depth$;\n");
+        }
       } else {
-	printer.Print(vars,
+        printer.Print(vars,
 		      "SV ** sv$depth$;\n"
 		      "\n"
 		      "if ( (sv$depth$ = "
@@ -2083,7 +2096,7 @@ PerlXSGenerator::MessageFromHashref(const Descriptor * descriptor,
 
     if ( field->cpp_type() == FieldDescriptor::CPPTYPE_MESSAGE ) {
       if ( descriptor->full_name() == contains->full_name() ) {
-        // fuck
+        // don't want to go here ;)
       } else {
           MessageFromHashref(field->message_type(), printer, vars, depth + 2);
       }

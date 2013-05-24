@@ -9,6 +9,7 @@ message Person {
   optional string email = 3;
   optional Person person = 4;
   required Child  child = 5;
+  repeated Child  children = 6;
 }
 
 option optimize_for = SPEED;

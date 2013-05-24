@@ -104,6 +104,9 @@ class LIBPROTOC_EXPORT PerlXSGenerator : public CodeGenerator {
   void GenerateMessageXSPackage(const Descriptor* descriptor,
 				io::Printer& printer) const;
 
+  void GenerateMessageToHashref(const Descriptor* descriptor,
+				io::Printer& printer) const;
+
   void GenerateTypemapInput(const Descriptor* descriptor,
 			    io::Printer& printer,
 			    const string& svname) const;

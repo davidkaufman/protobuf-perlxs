@@ -1392,12 +1392,34 @@ PerlXSGenerator::GenerateMessageXSCommonMethods(const Descriptor* descriptor,
 }
 
 void
+PerlXSGenerator::GenerateMessageToHashref(const Descriptor* descriptor,
+                      io::Printer& printer) const
+{
+  map<string, string> vars;
+
+  string cn = cpp::ClassName(descriptor, true);
+  string mn = MessageModuleName(descriptor);
+  string pn = MessageClassName(descriptor);
+  string un = StringReplace(cn, "::", "__", true);
+
+  vars["module"]      = mn;
+  vars["classname"]   = cn;
+  vars["package"]     = pn;
+  vars["underscores"] = un;
+
+  for ( int i = 0; i < descriptor->nested_type_count(); i++ ) {
+    GenerateMessageToHashref(descriptor->nested_type(i), printer);
+  }
+
+  printer.Print(vars,
+    "static SV * $underscores$_message_to_hashref( $classname$ * message );\n");
+}
+
+void
 PerlXSGenerator::GenerateMessageXSPackage(const Descriptor* descriptor,
 					  io::Printer& printer) const
 {
-  for ( int i = 0; i < descriptor->nested_type_count(); i++ ) {
-    GenerateMessageXSPackage(descriptor->nested_type(i), printer);
-  }
+  GenerateMessageToHashref(descriptor, printer);
 
   map<string, string> vars;
 
@@ -1405,6 +1427,43 @@ PerlXSGenerator::GenerateMessageXSPackage(const Descriptor* descriptor,
   string mn = MessageModuleName(descriptor);
   string pn = MessageClassName(descriptor);
   string un = StringReplace(cn, "::", "__", true);
+
+  vars["module"]      = mn;
+  vars["classname"]   = cn;
+  vars["package"]     = pn;
+  vars["underscores"] = un;
+
+  // to_hashref internal
+
+  printer.Print(vars,
+		"static SV * $underscores$_message_to_hashref( $classname$ * message )\n{\n");
+  printer.Print(vars,
+		"    if ( message != NULL ) {\n"
+		"      HV * hv0 = newHV();\n"
+		"      $classname$ * msg0 = message;\n"
+		"\n");
+
+  vars["depth"] = "0";
+  vars["fieldtype"] = cn;
+
+  printer.Indent();
+  printer.Indent();
+  printer.Indent();
+  MessageToHashref(descriptor, printer, vars, 0);
+  printer.Outdent();
+  printer.Outdent();
+  printer.Outdent();
+
+  printer.Print("      return newRV_noinc((SV *)hv0);\n"
+		"    } else {\n"
+		"      return Nullsv;\n"
+		"    }\n}"
+		"\n"
+		"\n");
+
+  for ( int i = 0; i < descriptor->nested_type_count(); i++ ) {
+    GenerateMessageXSPackage(descriptor->nested_type(i), printer);
+  }
 
   vars["module"]      = mn;
   vars["classname"]   = cn;
@@ -1816,22 +1875,33 @@ PerlXSGenerator::MessageToHashref(const Descriptor * descriptor,
 
   for ( i = 0; i < descriptor->field_count(); i++ ) {
     const FieldDescriptor* field = descriptor->field(i);
+    const Descriptor* contains = field->containing_type();
     FieldDescriptor::CppType fieldtype = field->cpp_type();
 
     vars["field"] = field->name();
     vars["cppname"] = cpp::FieldName(field);
-    
+
     StartFieldToHashref(field, printer, vars, depth);
 
     if ( fieldtype == FieldDescriptor::CPPTYPE_MESSAGE ) {
       vars["fieldtype"] = cpp::ClassName(field->message_type(), true);
-      printer.Print(vars,
+      vars["underscores"] = StringReplace(cpp::ClassName(field->message_type(), true), "::", "__", true);
+      if ( descriptor->full_name() == contains->full_name() ) { 
+          // fuck
+          printer.Print(vars,
+		    "$fieldtype$ * msg$ndepth$ = msg$pdepth$->"
+		    "mutable_$cppname$($i$);\n"
+		    "SV * sv$depth$ = $underscores$_message_to_hashref(msg$ndepth$);\n"
+		    "\n");
+      } else {
+          printer.Print(vars,
 		    "$fieldtype$ * msg$ndepth$ = msg$pdepth$->"
 		    "mutable_$cppname$($i$);\n"
 		    "HV * hv$ndepth$ = newHV();\n"
 		    "SV * sv$depth$ = newRV_noinc((SV *)hv$ndepth$);\n"
 		    "\n");
-      MessageToHashref(field->message_type(), printer, vars, depth + 2);
+          MessageToHashref(field->message_type(), printer, vars, depth + 2);
+      }
       SetupDepthVars(vars, depth);
     } else {
       FieldToHashrefHelper(printer, vars, field);
@@ -1943,12 +2013,15 @@ PerlXSGenerator::MessageFromHashref(const Descriptor * descriptor,
 
   for ( i = 0; i < descriptor->field_count(); i++ ) {
     const FieldDescriptor* field = descriptor->field(i);
+    const Descriptor* contains = field->containing_type();
 
     vars["field"]   = field->name();
     vars["cppname"] = cpp::FieldName(field);
+    vars["classname"] = contains->name();
 
     if ( field->cpp_type() == FieldDescriptor::CPPTYPE_MESSAGE ) {
       vars["fieldtype"] = cpp::ClassName(field->message_type(), true);
+      vars["underscores"] = StringReplace(cpp::ClassName(field->message_type(), true), "::", "__", true);
     }
 
     printer.Print(vars,
@@ -1989,16 +2062,29 @@ PerlXSGenerator::MessageFromHashref(const Descriptor * descriptor,
       printer.Indent();
     } else {
       if ( field->cpp_type() == FieldDescriptor::CPPTYPE_MESSAGE ) {
-	printer.Print(vars,
+            if ( descriptor->full_name() == contains->full_name() ) {
+              printer.Print(vars,
+		      "$fieldtype$ * msg$ndepth$ = "
+		      "msg$pdepth$->mutable_$cppname$();\n"
+              "$fieldtype$ * tmp_msg$ndepth$ = $underscores$_from_hashref( *sv$depth$ );\n"
+		      "msg$ndepth$->CopyFrom( *tmp_msg$ndepth$ );"
+		      "\n");
+            } else {
+              printer.Print(vars,
 		      "$fieldtype$ * msg$ndepth$ = "
 		      "msg$pdepth$->mutable_$cppname$();\n"
 		      "SV * sv$ndepth$ = *sv$depth$;\n"
 		      "\n");
+            }
       }
     }
 
     if ( field->cpp_type() == FieldDescriptor::CPPTYPE_MESSAGE ) {
-      MessageFromHashref(field->message_type(), printer, vars, depth + 2);
+      if ( descriptor->full_name() == contains->full_name() ) {
+        // fuck
+      } else {
+          MessageFromHashref(field->message_type(), printer, vars, depth + 2);
+      }
       SetupDepthVars(vars, depth);
     } else {
       FieldFromHashrefHelper(printer, vars, field);

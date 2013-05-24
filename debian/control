@@ -1,0 +1,12 @@
+Source: protobuf-perlxs
+Section: unknown
+Priority: extra
+Maintainer: Serge Toropov <sombr@yandex-team.ru>
+Build-Depends: debhelper (>= 5), autotools-dev, libprotobuf2.2-dev | libprotobuf-dev, libprotoc2.2-dev | libprotoc-dev
+Standards-Version: 3.7.2
+
+Package: protobuf-perlxs
+Architecture: amd64
+Depends: ${shlibs:Depends}, ${misc:Depends}, libprotobuf2.2-dev | libprotobuf-dev, libprotoc2.2-dev | libprotoc-dev
+Description: <insert up to 60 chars description>
+ <insert long description, indented with spaces>

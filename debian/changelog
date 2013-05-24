@@ -1,0 +1,24 @@
+protobuf-perlxs (1.1-4) unstable; urgency=low
+
+  * redebianify
+
+ -- Serge Toropov <sombr@yandex-team.ru>  Fri, 24 May 2013 11:55:18 +0400
+
+protobuf-perlxs (1.1-3) unstable; urgency=low
+
+  * new depends on libprotobuf on hardy
+
+ -- Yury Zavarin <tadam@yandex-team.ru>  Fri, 04 Mar 2011 21:20:42 +0300
+
+protobuf-perlxs (1.1-2) unstable; urgency=low
+
+  * new version just for sync with lucid package
+
+ -- Yury Zavarin <tadam@yandex-team.ru>  Wed, 01 Sep 2010 17:31:14 +0400
+
+protobuf-perlxs (1.1-1) unstable; urgency=low
+
+  * Initial release (Closes: #nnnn)  <nnnn is the bug number of your ITP>
+
+ -- Yury Zavarin <tadam@yandex-team.ru>  Tue, 18 May 2010 00:25:58 +0400
+

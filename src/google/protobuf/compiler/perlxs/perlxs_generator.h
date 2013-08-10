@@ -146,7 +146,7 @@ class LIBPROTOC_EXPORT PerlXSGenerator : public CodeGenerator {
   void MessageToHashref(const Descriptor * descriptor,
 			io::Printer& printer,
 			map<string, string>& vars,
-			int depth) const;
+			int depth, std::set<string> * look_up = 0, string dname = "") const;
 
   void FieldFromHashrefHelper(io::Printer& printer,
 			      map<string, string>& vars,
@@ -155,7 +155,7 @@ class LIBPROTOC_EXPORT PerlXSGenerator : public CodeGenerator {
   void MessageFromHashref(const Descriptor * descriptor,
 			  io::Printer& printer,
 			  map<string, string>& vars,
-			  int depth) const;
+			  int depth, string dname = "") const;
 
  private:
   // --perlxs-package option (if given)

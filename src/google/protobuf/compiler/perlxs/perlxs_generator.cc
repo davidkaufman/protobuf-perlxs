@@ -1834,12 +1834,20 @@ void
 PerlXSGenerator::MessageToHashref(const Descriptor * descriptor,
 				  io::Printer& printer,
 				  map<string, string>& vars,
-				  int depth) const
+				  int depth, std::set<string> * look_up, string dname ) const
 {
   int i;
 
   // Iterate the fields
   string d_name = descriptor->full_name();
+  if ( dname != "" ) {
+    d_name = dname;
+  }
+  bool first_call = false;
+  if ( look_up == 0 ) {
+    first_call = true;
+    look_up = new std::set<string>();
+  }
 
   for ( i = 0; i < descriptor->field_count(); i++ ) {
     const FieldDescriptor* field = descriptor->field(i);
@@ -1853,14 +1861,15 @@ PerlXSGenerator::MessageToHashref(const Descriptor * descriptor,
     if ( fieldtype == FieldDescriptor::CPPTYPE_MESSAGE ) {
       vars["fieldtype"] = cpp::ClassName(field->message_type(), true);
       string f_name = field->message_type()->full_name();
-      if ( d_name != f_name ) {
+      if ( d_name != f_name && !look_up->count( f_name ) ) {
           printer.Print(vars,
                 "$fieldtype$ * msg$ndepth$ = msg$pdepth$->"
                 "mutable_$cppname$($i$);\n"
                 "HV * hv$ndepth$ = newHV();\n"
                 "SV * sv$depth$ = newRV_noinc((SV *)hv$ndepth$);\n"
                 "\n");
-          MessageToHashref(field->message_type(), printer, vars, depth + 2);
+          look_up->insert( f_name );
+          MessageToHashref(field->message_type(), printer, vars, depth + 2, look_up, d_name);
       } else {
           printer.Print(vars,
                 "$fieldtype$ * msg$ndepth$ = msg$pdepth$->"
@@ -1875,6 +1884,10 @@ PerlXSGenerator::MessageToHashref(const Descriptor * descriptor,
     }
 
     EndFieldToHashref(field, printer, vars, depth);
+  }
+
+  if ( first_call ) {
+    delete look_up;
   }
 }
 
@@ -1961,10 +1974,13 @@ void
 PerlXSGenerator::MessageFromHashref(const Descriptor * descriptor,
 				    io::Printer& printer,
 				    map<string, string>& vars,
-				    int depth) const
+				    int depth, string dname ) const
 {
   int i;
   string d_name = descriptor->full_name();
+  if ( dname != "" ) {
+      d_name = dname;
+  }
 
   SetupDepthVars(vars, depth);
 
@@ -2039,11 +2055,20 @@ PerlXSGenerator::MessageFromHashref(const Descriptor * descriptor,
 
     if ( field->cpp_type() == FieldDescriptor::CPPTYPE_MESSAGE ) {
       if ( d_name != f_name ) {
-          MessageFromHashref(field->message_type(), printer, vars, depth + 2);
+          if ( depth < 128 ) {
+              MessageFromHashref(field->message_type(), printer, vars, depth + 2, d_name);
+          } else {
+              printer.Print(vars,
+                  "croak(\"Too deep recursion - not supported yet\");\n");
+          }
       } else {
+          string cn = cpp::ClassName(field->message_type(), true);
+          string un = StringReplace(cn, "::", "__", true);
+          vars["lunderscores"] = un;
+
           printer.Print(vars,
               "$fieldtype$ * tmp_msg$ndepth$ = "
-              "$underscores$_from_hashref( sv$ndepth$ );\n"
+              "$lunderscores$_from_hashref( sv$ndepth$ );\n"
               "msg$ndepth$->CopyFrom( *tmp_msg$ndepth$ );\n"
               "delete tmp_msg$ndepth$;\n"
           );
